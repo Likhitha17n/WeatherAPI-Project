@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WeatherNow</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f0f0f0;
+            color: #333;
+            margin: 0;
+            padding: 0;
+            text-align: center;
+        }
+        .navbar {
+            background-color: #333;
+            padding: 1rem;
+        }
+        .nav-list {
+            list-style-type: none;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+        }
+        .nav-item {
+            margin: 0 15px;
+        }
+        .nav-item a {
+            color: white;
+            text-decoration: none;
+            font-size: 1.2rem;
+        }
+        .container {
+            padding: 50px 20px;
+        }
+        .form {
+            margin-bottom: 20px;
+        }
+        #input {
+            padding: 10px;
+            width: 300px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+        }
+        .button {
+            padding: 10px 20px;
+            margin-left: 10px;
+            border: none;
+            background-color: #4CAF50;
+            color: white;
+            cursor: pointer;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+        .result-container {
+            margin-top: 20px;
+        }
+        .result-box {
+            display: inline-block;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        .loader {
+            border: 16px solid #f3f3f3;
+            border-radius: 50%;
+            border-top: 16px solid #3498db;
+            width: 60px;
+            height: 60px;
+            animation: spin 2s linear infinite;
+            margin: auto;
+            display: none;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        footer {
+            background-color: #333;
+            color: white;
+            padding: 10px;
+            position: fixed;
+            bottom: 0;
+            width: 100%;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Navbar -->
+    <nav class="navbar">
+        <ul class="nav-list">
+            <li class="nav-item"><a href="#">Home</a></li>
+            <li class="nav-item"><a href="#">Contributors</a></li>
+            <li class="nav-item"><a href="#">About</a></li>
+        </ul>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="container">
+        <header>
+            <div class="homepage">
+                <h1 class="landing-text">WeatherNow</h1>
+                <p class="landing-text-2">Where Is The Sun? Is It Above Or Below The Clouds?</p>
+            </div>
+        </header>
+
+        <!-- Search Form -->
+        <div class="form">
+            <input id="input" type="text" placeholder="Enter a city name" />
+            <button id="button" class="button" onclick="getWeather()">GO</button>
+            <button id="location-button" class="button" onclick="getLocationWeather()">Use My Location</button>
+        </div>
+
+        <!-- Weather Result -->
+        <div class="result-container">
+            <div id="loader" class="loader"></div>
+            <div id="result" class="result-box" style="display: none">
+                <h2 id="city-name"></h2>
+                <p id="weather-desc"></p>
+                <p><strong>Temperature:</strong> <span id="temperature"></span>°C</p>
+                <p><strong>Humidity:</strong> <span id="humidity"></span>%</p>
+                <p><strong>Wind Speed:</strong> <span id="wind-speed"></span> km/h</p>
+            </div>
+        </div>
+
+        <!-- Chart -->
+        <canvas id="hourlyChart" width="400" height="200"></canvas>
+    </div>
+
+    <!-- Footer -->
+    <footer>
+        <p>WeatherNow is a weather application that displays the weather of any city.<br>© Roy™ <span id="copyrightYear"></span></p>
+    </footer>
+
+    <!-- Scripts -->
+    <script>
+        const apiKey = '361f461bd053e84661b77a41ae71cf2b'; // Your OpenWeather API key
+
+        function getWeather() {
+            const city = document.getElementById('input').value.trim();
+
+            if (!city) {
+                alert("Please enter a city name.");
+                return;
+            }
+
+            const url = `https://api.openweathermap.org/data/2.5/weather?q=${encodeURIComponent(city)}&appid=${apiKey}&units=metric`;
+            fetchWeatherData(url);
+        }
+
+        function getLocationWeather() {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition((position) => {
+                    const lat = position.coords.latitude;
+                    const lon = position.coords.longitude;
+                    const url = `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${apiKey}&units=metric`;
+                    fetchWeatherData(url);
+                });
+            } else {
+                alert("Geolocation is not supported by this browser.");
+            }
+        }
+
+        function fetchWeatherData(url) {
+            document.getElementById('loader').style.display = 'block';
+            document.getElementById('result').style.display = 'none';
+
+            fetch(url)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('City not found or invalid API key');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    console.log(data); // Log the data for debugging
+                    document.getElementById('loader').style.display = 'none';
+                    document.getElementById('result').style.display = 'block';
+                    
+                    document.getElementById('city-name').innerText = data.name;
+                    document.getElementById('weather-desc').innerText = data.weather[0].description;
+                    document.getElementById('temperature').innerText = data.main.temp;
+                    document.getElementById('humidity').innerText = data.main.humidity;
+                    document.getElementById('wind-speed').innerText = data.wind.speed;
+                })
+                .catch(error => {
+                    document.getElementById('loader').style.display = 'none';
+                    alert(error.message);
+                });
+        }
+
+        document.getElementById('copyrightYear').innerText = new Date().getFullYear();
+    </script>
+</body>
+</html>
